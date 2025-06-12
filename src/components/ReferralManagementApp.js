@@ -218,6 +218,12 @@ const ReferralManagementApp = () => {
     return payment?.isInvoiced || false;
   };
 
+  const getPaymentAmount = (customerId, month) => {
+    const customerPayments = payments[customerId] || [];
+    const payment = customerPayments.find(p => p.month === month);
+    return payment?.amount || null;
+  };
+
   const isPaymentValidForMonth = (referral, monthKey) => {
     const startDate = new Date(referral.startDate);
     const paymentMonth = new Date(monthKey + '-01');
@@ -733,7 +739,7 @@ const ReferralManagementApp = () => {
              <thead className="bg-gray-50">
                <tr>
                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Customer</th>
-                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Monthly Value</th>
+                 <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Expected / Actual Payment</th>
                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Payment Status</th>
                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Invoice Status</th>
                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-900">Actions</th>
@@ -749,6 +755,7 @@ const ReferralManagementApp = () => {
                  .map((referral) => {
                    const paymentStatus = getPaymentStatus(referral.id, selectedMonth);
                    const invoiceStatus = getInvoiceStatus(referral.id, selectedMonth);
+                   const actualPaymentAmount = getPaymentAmount(referral.id, selectedMonth);
                    return (
                      <tr key={referral.id} className="hover:bg-gray-50 transition-colors duration-150">
                        <td className="px-6 py-4">
@@ -761,7 +768,24 @@ const ReferralManagementApp = () => {
                          </div>
                        </td>
                        <td className="px-6 py-4">
-                         <div className="text-gray-900 font-semibold">${referral.monthlyValue.toLocaleString()}</div>
+                         <div className="text-gray-900 font-semibold">
+                           ${referral.monthlyValue.toLocaleString()}
+                           {actualPaymentAmount !== null && (
+                             <div className="text-sm text-gray-600 mt-1">
+                               Actual: ${parseFloat(actualPaymentAmount).toLocaleString()}
+                               {parseFloat(actualPaymentAmount) !== referral.monthlyValue && (
+                                 <span className={`ml-2 text-xs px-2 py-1 rounded ${
+                                   parseFloat(actualPaymentAmount) > referral.monthlyValue 
+                                     ? 'bg-green-100 text-green-700' 
+                                     : 'bg-orange-100 text-orange-700'
+                                 }`}>
+                                   {parseFloat(actualPaymentAmount) > referral.monthlyValue ? '+' : ''}
+                                   ${(parseFloat(actualPaymentAmount) - referral.monthlyValue).toLocaleString()}
+                                 </span>
+                               )}
+                             </div>
+                           )}
+                         </div>
                        </td>
                        <td className="px-6 py-4">
                          <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${
