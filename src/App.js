@@ -1,12 +1,15 @@
 import React from 'react';
-import ReferralManagementApp from './components/ReferralManagementApp';
+import { AuthProvider } from './contexts/AuthContext';
+import Dashboard from './components/Dashboard';
 import './App.css';
 
 function App() {
   return (
-    <div className="App p-8">
-      <ReferralManagementApp />
-    </div>
+    <AuthProvider>
+      <div className="App">
+        <Dashboard />
+      </div>
+    </AuthProvider>
   );
 }
 

@@ -11,7 +11,7 @@ import {
   orderBy,
   writeBatch
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 
 // ========================
 // REFERRAL OPERATIONS
@@ -22,11 +22,15 @@ import { db } from '../firebase';
  */
 export const addReferral = async (referralData) => {
   try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('User not authenticated');
+    
     const docRef = await addDoc(collection(db, 'referrals'), {
       customerName: referralData.customerName,
       monthlyValue: referralData.monthlyValue,
       status: referralData.status,
       startDate: referralData.startDate,
+      userId: user.uid,
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -66,6 +70,9 @@ export const updateReferral = async (id, referralData) => {
  */
 export const deleteReferral = async (id) => {
   try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('User not authenticated');
+    
     const batch = writeBatch(db);
     
     // Delete the referral
@@ -75,7 +82,8 @@ export const deleteReferral = async (id) => {
     // Find and delete all related payments
     const paymentsQuery = query(
       collection(db, 'payments'), 
-      where('referralId', '==', id)
+      where('referralId', '==', id),
+      where('userId', '==', user.uid)
     );
     const paymentsSnapshot = await getDocs(paymentsQuery);
     
@@ -123,8 +131,15 @@ export const getReferrals = async () => {
  */
 export const subscribeToReferrals = (callback) => {
   try {
+    const user = auth.currentUser;
+    if (!user) {
+      callback([]);
+      return () => {};
+    }
+    
     const q = query(
-      collection(db, 'referrals'), 
+      collection(db, 'referrals'),
+      where('userId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
     
@@ -157,12 +172,16 @@ export const subscribeToReferrals = (callback) => {
  */
 export const addPayment = async (paymentData) => {
   try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('User not authenticated');
+    
     const docRef = await addDoc(collection(db, 'payments'), {
       referralId: paymentData.customerId,
       month: paymentData.month,
       status: paymentData.paymentStatus,
       amount: parseFloat(paymentData.amount),
       isInvoiced: paymentData.invoiceStatus || false,
+      userId: user.uid,
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -180,10 +199,14 @@ export const addPayment = async (paymentData) => {
  */
 export const updatePaymentStatus = async (referralId, month, status) => {
   try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('User not authenticated');
+    
     const paymentsQuery = query(
       collection(db, 'payments'),
       where('referralId', '==', referralId),
-      where('month', '==', month)
+      where('month', '==', month),
+      where('userId', '==', user.uid)
     );
     const paymentsSnapshot = await getDocs(paymentsQuery);
     
@@ -202,6 +225,7 @@ export const updatePaymentStatus = async (referralId, month, status) => {
         status: status,
         amount: 0, // Default amount, should be updated later
         isInvoiced: false,
+        userId: user.uid,
         createdAt: new Date(),
         updatedAt: new Date()
       });
@@ -218,10 +242,14 @@ export const updatePaymentStatus = async (referralId, month, status) => {
  */
 export const updateInvoiceStatus = async (referralId, month, isInvoiced) => {
   try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('User not authenticated');
+    
     const paymentsQuery = query(
       collection(db, 'payments'),
       where('referralId', '==', referralId),
-      where('month', '==', month)
+      where('month', '==', month),
+      where('userId', '==', user.uid)
     );
     const paymentsSnapshot = await getDocs(paymentsQuery);
     
@@ -247,10 +275,14 @@ export const updateInvoiceStatus = async (referralId, month, isInvoiced) => {
  */
 export const deletePayment = async (referralId, month) => {
   try {
+    const user = auth.currentUser;
+    if (!user) throw new Error('User not authenticated');
+    
     const paymentsQuery = query(
       collection(db, 'payments'),
       where('referralId', '==', referralId),
-      where('month', '==', month)
+      where('month', '==', month),
+      where('userId', '==', user.uid)
     );
     const paymentsSnapshot = await getDocs(paymentsQuery);
     
@@ -309,8 +341,15 @@ export const getPayments = async () => {
  */
 export const subscribeToPayments = (callback) => {
   try {
+    const user = auth.currentUser;
+    if (!user) {
+      callback({});
+      return () => {};
+    }
+    
     const q = query(
-      collection(db, 'payments'), 
+      collection(db, 'payments'),
+      where('userId', '==', user.uid),
       orderBy('createdAt', 'desc')
     );
     
