@@ -11,7 +11,8 @@ import {
   orderBy,
   writeBatch
 } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { db, auth } from '@/firebase';
+import { getUserTeams } from './teamService';
 
 // ========================
 // REFERRAL OPERATIONS
@@ -30,6 +31,7 @@ export const addReferral = async (referralData) => {
       monthlyValue: referralData.monthlyValue,
       status: referralData.status,
       startDate: referralData.startDate,
+      endDate: referralData.endDate,
       userId: user.uid,
       createdAt: new Date(),
       updatedAt: new Date()
@@ -54,6 +56,7 @@ export const updateReferral = async (id, referralData) => {
       monthlyValue: referralData.monthlyValue,
       status: referralData.status,
       startDate: referralData.startDate,
+      endDate: referralData.endDate,
       updatedAt: new Date()
     });
     
@@ -129,27 +132,51 @@ export const getReferrals = async () => {
 /**
  * Subscribe to real-time referral updates
  */
-export const subscribeToReferrals = (callback) => {
+export const subscribeToReferrals = async (callback) => {
   try {
     const user = auth.currentUser;
+    console.log('subscribeToReferrals - Current user:', user?.uid || 'No user');
+    
     if (!user) {
+      console.log('No authenticated user, returning empty array');
       callback([]);
       return () => {};
     }
     
+    // Get user's teams to include team members' referrals
+    const teams = await getUserTeams();
+    const teamMemberIds = new Set([user.uid]); // Include current user
+    
+    teams.forEach(team => {
+      team.members.forEach(memberId => teamMemberIds.add(memberId));
+    });
+    
+    const memberIds = Array.from(teamMemberIds);
+    console.log('Setting up referrals query for team members:', memberIds);
+    
     const q = query(
       collection(db, 'referrals'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc')
+      where('userId', 'in', memberIds)
     );
     
+    console.log('About to start onSnapshot listener...');
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const referrals = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      console.log('Firestore snapshot received:', snapshot.size, 'documents');
+      const referrals = snapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log('Document data:', doc.id, data);
+        return {
+          id: doc.id,
+          ...data
+        };
+      }).sort((a, b) => {
+        // Sort by createdAt descending (newest first)
+        const aTime = a.createdAt?.toDate?.() || new Date(0);
+        const bTime = b.createdAt?.toDate?.() || new Date(0);
+        return bTime - aTime;
+      });
       
-      console.log('Real-time referrals update:', referrals.length);
+      console.log('Processed referrals:', referrals.length, referrals);
       callback(referrals);
     }, (error) => {
       console.error('Error in referrals subscription:', error);
@@ -339,18 +366,31 @@ export const getPayments = async () => {
 /**
  * Subscribe to real-time payment updates
  */
-export const subscribeToPayments = (callback) => {
+export const subscribeToPayments = async (callback) => {
   try {
     const user = auth.currentUser;
+    console.log('subscribeToPayments - Current user:', user?.uid || 'No user');
+    
     if (!user) {
+      console.log('No authenticated user, returning empty object');
       callback({});
       return () => {};
     }
     
+    // Get user's teams to include team members' payments
+    const teams = await getUserTeams();
+    const teamMemberIds = new Set([user.uid]); // Include current user
+    
+    teams.forEach(team => {
+      team.members.forEach(memberId => teamMemberIds.add(memberId));
+    });
+    
+    const memberIds = Array.from(teamMemberIds);
+    console.log('Setting up payments query for team members:', memberIds);
+    
     const q = query(
       collection(db, 'payments'),
-      where('userId', '==', user.uid),
-      orderBy('createdAt', 'desc')
+      where('userId', 'in', memberIds)
     );
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -373,6 +413,15 @@ export const subscribeToPayments = (callback) => {
           createdAt: payment.createdAt,
           updatedAt: payment.updatedAt,
           invoicedAt: payment.invoicedAt
+        });
+      });
+      
+      // Sort payments within each referral by date
+      Object.keys(paymentsData).forEach(referralId => {
+        paymentsData[referralId].sort((a, b) => {
+          const aTime = a.createdAt?.toDate?.() || new Date(0);
+          const bTime = b.createdAt?.toDate?.() || new Date(0);
+          return bTime - aTime;
         });
       });
       
