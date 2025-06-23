@@ -3,12 +3,12 @@
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-2xl font-bold text-gray-900">Referrals</h2>
       <button
-        @click="$emit('showAddPaymentForm')"
-        class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 hover:from-green-600 hover:to-emerald-700 transition-all duration-300"
+        @click="$emit('showAddReferralForm')"
+        class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 hover:from-blue-600 hover:to-indigo-700 transition-all duration-300"
         :disabled="loading"
       >
         <Plus :size="18" />
-        Add Payment
+        Add Referral
       </button>
     </div>
 
@@ -44,13 +44,16 @@
               <div class="font-medium text-gray-900">{{ referral.customerName }}</div>
             </td>
             <td class="py-4 px-4">
-              <div class="text-green-600 font-semibold">${{ referral.monthlyValue.toFixed(2) }}</div>
+              <div class="text-green-600 font-semibold">
+                {{ referral.status === 'In pipeline' ? 'TBD' : `$${referral.monthlyValue.toFixed(2)}` }}
+              </div>
             </td>
             <td class="py-4 px-4">
               <span 
                 :class="[
                   'px-2 py-1 rounded-full text-xs font-medium',
                   referral.status === 'Active' ? 'bg-green-100 text-green-800' :
+                  referral.status === 'In pipeline' ? 'bg-blue-100 text-blue-800' :
                   referral.status === 'Inactive' ? 'bg-yellow-100 text-yellow-800' :
                   'bg-red-100 text-red-800'
                 ]"
@@ -59,7 +62,9 @@
               </span>
             </td>
             <td class="py-4 px-4">
-              <div class="text-gray-600">{{ formatDate(referral.startDate) }}</div>
+              <div class="text-gray-600">
+                {{ referral.startDate ? formatDate(referral.startDate) : 'TBD' }}
+              </div>
             </td>
             <td class="py-4 px-4">
               <div class="text-gray-600">
@@ -102,7 +107,7 @@ defineProps({
   loading: Boolean
 })
 
-const emit = defineEmits(['edit', 'delete', 'showAddPaymentForm'])
+const emit = defineEmits(['edit', 'delete', 'showAddReferralForm'])
 
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('en-US', {

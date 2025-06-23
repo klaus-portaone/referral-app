@@ -18,7 +18,7 @@
           />
         </div>
 
-        <div>
+        <div v-if="formData.status !== 'In pipeline'">
           <label class="block text-sm font-medium text-gray-700 mb-2">Monthly Value ($)</label>
           <input
             :value="formData.monthlyValue"
@@ -27,7 +27,7 @@
             step="0.01"
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Enter monthly value"
-            required
+            :required="formData.status !== 'In pipeline'"
           />
         </div>
 
@@ -38,20 +38,21 @@
             @change="updateFormData('status', $event.target.value)"
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
+            <option value="In pipeline">In pipeline</option>
             <option value="Active">Active</option>
             <option value="Inactive">Inactive</option>
             <option value="Cancelled">Cancelled</option>
           </select>
         </div>
 
-        <div>
+        <div v-if="formData.status !== 'In pipeline'">
           <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
           <input
             :value="formData.startDate"
             @input="updateFormData('startDate', $event.target.value)"
             type="date"
             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            required
+            :required="formData.status !== 'In pipeline'"
           />
         </div>
 

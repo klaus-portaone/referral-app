@@ -1,0 +1,31 @@
+<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="15" fill="#4F46E5"/>
+  
+  <!-- Simplified network nodes - larger for visibility at small size -->
+  <g fill="white">
+    <!-- Central hub node -->
+    <circle cx="16" cy="16" r="3"/>
+    
+    <!-- Key surrounding nodes -->
+    <circle cx="9" cy="9" r="2"/>
+    <circle cx="23" cy="9" r="2"/>
+    <circle cx="23" cy="23" r="2"/>
+    <circle cx="9" cy="23" r="2"/>
+    
+    <!-- Connection lines - thicker for visibility -->
+    <line x1="16" y1="16" x2="9" y2="9" stroke="white" stroke-width="2"/>
+    <line x1="16" y1="16" x2="23" y2="9" stroke="white" stroke-width="2"/>
+    <line x1="16" y1="16" x2="23" y2="23" stroke="white" stroke-width="2"/>
+    <line x1="16" y1="16" x2="9" y2="23" stroke="white" stroke-width="2"/>
+  </g>
+  
+  <!-- Subtle highlight -->
+  <defs>
+    <radialGradient id="faviconGradient" cx="0.3" cy="0.3">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.3)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+  </defs>
+  <circle cx="16" cy="16" r="15" fill="url(#faviconGradient)"/>
+</svg>

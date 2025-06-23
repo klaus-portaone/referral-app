@@ -2,19 +2,29 @@
   <div class="bg-white rounded-2xl shadow-xl p-8">
     <div class="flex justify-between items-center mb-6">
       <h2 class="text-2xl font-bold text-gray-900">Payment Tracking</h2>
-      <select
-        :value="selectedMonth"
-        @change="$emit('update:selectedMonth', $event.target.value)"
-        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-      >
-        <option 
-          v-for="month in monthsArray" 
-          :key="month.key" 
-          :value="month.key"
+      <div class="flex items-center gap-4">
+        <select
+          :value="selectedMonth"
+          @change="$emit('update:selectedMonth', $event.target.value)"
+          class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         >
-          {{ month.name }}
-        </option>
-      </select>
+          <option 
+            v-for="month in monthsArray" 
+            :key="month.key" 
+            :value="month.key"
+          >
+            {{ month.name }}
+          </option>
+        </select>
+        <button
+          @click="$emit('showAddPaymentForm')"
+          class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 hover:from-green-600 hover:to-emerald-700 transition-all duration-300"
+          :disabled="loading"
+        >
+          <Plus :size="18" />
+          Add Payment
+        </button>
+      </div>
     </div>
 
     <div v-if="loading && referrals.length === 0" class="text-center py-8">
@@ -54,6 +64,7 @@
                 :class="[
                   'px-2 py-1 rounded-full text-xs font-medium',
                   referral.status === 'Active' ? 'bg-green-100 text-green-800' :
+                  referral.status === 'In pipeline' ? 'bg-blue-100 text-blue-800' :
                   referral.status === 'Inactive' ? 'bg-yellow-100 text-yellow-800' :
                   'bg-red-100 text-red-800'
                 ]"
@@ -62,7 +73,9 @@
               </span>
             </td>
             <td class="py-4 px-4">
-              <div class="text-green-600 font-semibold">${{ referral.monthlyValue.toFixed(2) }}</div>
+              <div class="text-green-600 font-semibold">
+                {{ referral.status === 'In pipeline' ? 'TBD' : `$${referral.monthlyValue.toFixed(2)}` }}
+              </div>
             </td>
             <td class="py-4 px-4">
               <div class="text-gray-900 font-medium">
@@ -127,7 +140,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { CreditCard, Trash2 } from 'lucide-vue-next'
+import { CreditCard, Trash2, Plus } from 'lucide-vue-next'
 
 const props = defineProps({
   referrals: {
@@ -169,12 +182,18 @@ const emit = defineEmits([
   'update:selectedMonth',
   'updatePaymentStatus',
   'updateInvoiceStatus',
-  'deletePayment'
+  'deletePayment',
+  'showAddPaymentForm'
 ])
 
 const activeReferrals = computed(() => {
   // Get all referrals that should show payments for the selected month
   const referralsWithPayments = props.referrals.filter(ref => {
+    // Exclude pipeline referrals from payment tracking
+    if (ref.status === 'In pipeline') {
+      return false;
+    }
+    
     // Always include if the month is valid for this referral (regardless of current status)
     const isValidMonth = props.isPaymentValidForMonth(ref, props.selectedMonth);
     

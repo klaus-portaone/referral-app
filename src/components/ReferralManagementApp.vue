@@ -4,18 +4,13 @@
       <!-- Header -->
       <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
         <div class="flex justify-between items-center">
-          <div>
-            <h1 class="text-4xl font-bold text-gray-900 mb-2">Referral Management</h1>
-            <p class="text-gray-600">Firebase-powered referral management with real-time sync</p>
+          <div class="flex items-center gap-6">
+            <img src="/referral_logo.svg" alt="Referral Management Logo" class="h-36 w-36" />
+            <div>
+              <h1 class="text-4xl font-bold text-gray-900 mb-2">Referral Management</h1>
+              <p class="text-gray-600">Firebase-powered referral management with real-time sync</p>
+            </div>
           </div>
-          <button
-            @click="showAddForm = true"
-            class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-lg hover:shadow-xl"
-            :disabled="loading"
-          >
-            <PlusCircle :size="20" />
-            Add Referral
-          </button>
         </div>
       </div>
 
@@ -58,7 +53,7 @@
         :showAddForm="showAddForm"
         :editingReferral="editingReferral"
         :formData="formData"
-        @update:formData="formData = $event"
+        @update:formData="Object.assign(formData, $event)"
         @submit="handleSubmit"
         @resetForm="resetForm"
         :loading="loading"
@@ -69,7 +64,7 @@
         :referrals="referrals"
         @edit="handleEdit"
         @delete="handleDelete"
-        @showAddPaymentForm="showAddPaymentForm = true"
+        @showAddReferralForm="showAddForm = true"
         :loading="loading"
       />
 
@@ -87,6 +82,7 @@
         @updatePaymentStatus="handleUpdatePaymentStatus"
         @updateInvoiceStatus="handleUpdateInvoiceStatus"
         @deletePayment="handleDeletePayment"
+        @showAddPaymentForm="showAddPaymentForm = true"
         :loading="loading"
       />
     </div>
@@ -133,7 +129,7 @@ const selectedMonth = ref((() => {
 const formData = reactive({
   customerName: '',
   monthlyValue: '',
-  status: 'Active',
+  status: 'In pipeline',
   startDate: '',
   endDate: ''
 })
@@ -228,7 +224,7 @@ const resetForm = () => {
   Object.assign(formData, {
     customerName: '',
     monthlyValue: '',
-    status: 'Active',
+    status: 'In pipeline',
     startDate: '',
     endDate: ''
   })
@@ -252,8 +248,14 @@ const resetPaymentForm = () => {
 }
 
 const handleSubmit = async () => {
-  if (!formData.customerName || !formData.monthlyValue || !formData.startDate) {
-    showErrorMessage.value = 'Please fill in all required fields'
+  // Validate required fields based on status
+  if (!formData.customerName) {
+    showErrorMessage.value = 'Customer name is required'
+    return
+  }
+  
+  if (formData.status !== 'In pipeline' && (!formData.monthlyValue || !formData.startDate)) {
+    showErrorMessage.value = 'Monthly value and start date are required for active referrals'
     return
   }
 
@@ -261,9 +263,9 @@ const handleSubmit = async () => {
     loading.value = true
     const referralData = {
       customerName: formData.customerName,
-      monthlyValue: parseFloat(formData.monthlyValue),
+      monthlyValue: formData.status === 'In pipeline' ? 0 : parseFloat(formData.monthlyValue),
       status: formData.status,
-      startDate: formData.startDate,
+      startDate: formData.status === 'In pipeline' ? null : formData.startDate,
       endDate: formData.endDate || null
     }
 
