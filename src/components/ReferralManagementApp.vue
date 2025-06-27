@@ -7,8 +7,8 @@
           <div class="flex items-center gap-6">
             <img src="/referral_logo.svg" alt="Referral Management Logo" class="h-36 w-36" />
             <div>
-              <h1 class="text-4xl font-bold text-gray-900 mb-2">Referral Management</h1>
-              <p class="text-gray-600">Firebase-powered referral management with real-time sync</p>
+              <h1 class="text-4xl font-bold text-gray-900 mb-2">Partner Management</h1>
+              <p class="text-gray-600">Firebase-powered partner management with real-time sync</p>
             </div>
           </div>
         </div>
