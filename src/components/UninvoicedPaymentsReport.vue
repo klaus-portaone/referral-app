@@ -96,8 +96,8 @@ const uninvoicedPayments = computed(() => {
     const customerPayments = props.payments[referral.id] || []
 
     customerPayments.forEach(payment => {
-      // Only include paid payments that haven't been invoiced
-      if (payment.status === 'paid' && !payment.isInvoiced) {
+      // Only include paid payments that haven't been invoiced and have a non-zero amount
+      if (payment.status === 'paid' && !payment.isInvoiced && payment.amount > 0) {
         payments.push({
           customerId: referral.id,
           customerName: referral.customerName,
