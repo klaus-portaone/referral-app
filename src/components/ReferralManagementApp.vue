@@ -1,98 +1,118 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-    <div class="max-w-7xl mx-auto">
-      <!-- Header -->
-      <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
-        <div class="flex justify-between items-center">
-          <div class="flex items-center gap-6">
-            <img src="/referral_logo.svg" alt="Referral Management Logo" class="h-36 w-36" />
-            <div>
-              <h1 class="text-4xl font-bold text-gray-900 mb-2">Partner Management</h1>
-              <p class="text-gray-600">Firebase-powered partner management with real-time sync</p>
-            </div>
+  <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex">
+    <!-- Sidebar -->
+    <Sidebar :activeView="activeView" @navigate="activeView = $event" />
+
+    <!-- Main Content Area -->
+    <div class="flex-1 overflow-y-auto">
+      <div class="max-w-7xl mx-auto p-6">
+        <!-- Success/Error Messages -->
+        <MessageBanner
+          :message="showSuccessMessage"
+          type="success"
+          @close="showSuccessMessage = ''"
+        />
+        <MessageBanner
+          :message="showErrorMessage"
+          type="error"
+          @close="showErrorMessage = ''"
+        />
+
+        <!-- Add Payment Form -->
+        <AddPaymentForm
+          :showAddPaymentForm="showAddPaymentForm"
+          :paymentFormData="paymentFormData"
+          @update:paymentFormData="updatePaymentFormData"
+          @addPayment="handleAddPayment"
+          @resetForm="resetPaymentForm"
+          :referrals="referrals"
+          :monthsArray="generateMonthsArray()"
+          :loading="loading"
+        />
+
+        <!-- Add/Edit Referral Form -->
+        <AddReferralForm
+          :showAddForm="showAddForm"
+          :editingReferral="editingReferral"
+          :formData="formData"
+          @update:formData="Object.assign(formData, $event)"
+          @submit="handleSubmit"
+          @resetForm="resetForm"
+          :loading="loading"
+        />
+
+        <!-- Overview View -->
+        <div v-if="activeView === 'overview'">
+          <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">Dashboard Overview</h2>
+            <p class="text-gray-600">Key metrics and performance at a glance</p>
           </div>
+
+          <StatsCards
+            :totalMonthlyValue="totalMonthlyValue"
+            :activeReferrals="activeReferrals"
+            :paymentStats="paymentStats"
+          />
+        </div>
+
+        <!-- Partners View -->
+        <div v-if="activeView === 'partners'">
+          <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">Partner Management</h2>
+            <p class="text-gray-600">Manage your referral partners and their status</p>
+          </div>
+
+          <ReferralsList
+            :referrals="referrals"
+            @edit="handleEdit"
+            @delete="handleDelete"
+            @showAddReferralForm="showAddForm = true"
+            :loading="loading"
+          />
+        </div>
+
+        <!-- Payments View -->
+        <div v-if="activeView === 'payments'">
+          <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">Payment Management</h2>
+            <p class="text-gray-600">Track payments and manage invoicing</p>
+          </div>
+
+          <PaymentTracking
+            :referrals="referrals"
+            :payments="payments"
+            :selectedMonth="selectedMonth"
+            @update:selectedMonth="selectedMonth = $event"
+            :monthsArray="generateMonthsArray()"
+            :getPaymentStatus="getPaymentStatus"
+            :getInvoiceStatus="getInvoiceStatus"
+            :getPaymentAmount="getPaymentAmount"
+            :isPaymentValidForMonth="isPaymentValidForMonth"
+            @updatePaymentStatus="handleUpdatePaymentStatus"
+            @updateInvoiceStatus="handleUpdateInvoiceStatus"
+            @deletePayment="handleDeletePayment"
+            @showAddPaymentForm="showAddPaymentForm = true"
+            :loading="loading"
+          />
+
+          <UninvoicedPaymentsReport
+            :referrals="referrals"
+            :payments="payments"
+            @updateInvoiceStatus="handleUpdateInvoiceStatus"
+            :loading="loading"
+          />
+        </div>
+
+        <!-- Team View -->
+        <div v-if="activeView === 'team'">
+          <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">Team Management</h2>
+            <p class="text-gray-600">Manage team members and permissions</p>
+          </div>
+
+          <TeamManagement @message="handleTeamMessage" />
         </div>
       </div>
-
-      <!-- Team Management -->
-      <TeamManagement @message="handleTeamMessage" />
-
-      <!-- Stats Cards -->
-      <StatsCards 
-        :totalMonthlyValue="totalMonthlyValue"
-        :activeReferrals="activeReferrals"
-        :paymentStats="paymentStats"
-      />
-
-      <!-- Success/Error Messages -->
-      <MessageBanner 
-        :message="showSuccessMessage" 
-        type="success" 
-        @close="showSuccessMessage = ''" 
-      />
-      <MessageBanner 
-        :message="showErrorMessage" 
-        type="error" 
-        @close="showErrorMessage = ''" 
-      />
-
-      <!-- Add Payment Form -->
-      <AddPaymentForm
-        :showAddPaymentForm="showAddPaymentForm"
-        :paymentFormData="paymentFormData"
-        @update:paymentFormData="updatePaymentFormData"
-        @addPayment="handleAddPayment"
-        @resetForm="resetPaymentForm"
-        :referrals="referrals"
-        :monthsArray="generateMonthsArray()"
-        :loading="loading"
-      />
-
-      <!-- Add/Edit Referral Form -->
-      <AddReferralForm
-        :showAddForm="showAddForm"
-        :editingReferral="editingReferral"
-        :formData="formData"
-        @update:formData="Object.assign(formData, $event)"
-        @submit="handleSubmit"
-        @resetForm="resetForm"
-        :loading="loading"
-      />
-
-      <!-- Uninvoiced Payments Report -->
-      <UninvoicedPaymentsReport
-        :referrals="referrals"
-        :payments="payments"
-        @updateInvoiceStatus="handleUpdateInvoiceStatus"
-        :loading="loading"
-      />
-
-      <!-- Main Content - Referrals List -->
-      <ReferralsList
-        :referrals="referrals"
-        @edit="handleEdit"
-        @delete="handleDelete"
-        @showAddReferralForm="showAddForm = true"
-        :loading="loading"
-      />
-
-      <!-- Payment Tracking Section -->
-      <PaymentTracking
-        :referrals="referrals"
-        :payments="payments"
-        :selectedMonth="selectedMonth"
-        @update:selectedMonth="selectedMonth = $event"
-        :monthsArray="generateMonthsArray()"
-        :getPaymentStatus="getPaymentStatus"
-        :getInvoiceStatus="getInvoiceStatus"
-        :getPaymentAmount="getPaymentAmount"
-        :isPaymentValidForMonth="isPaymentValidForMonth"
-        @updatePaymentStatus="handleUpdatePaymentStatus"
-        @updateInvoiceStatus="handleUpdateInvoiceStatus"
-        @deletePayment="handleDeletePayment"
-        @showAddPaymentForm="showAddPaymentForm = true"
-        :loading="loading"
-      />
     </div>
   </div>
 </template>
@@ -112,6 +132,7 @@ import {
   updateReferral
 } from '@/services/database'
 
+import Sidebar from './Sidebar.vue'
 import StatsCards from './StatsCards.vue'
 import AddReferralForm from './AddReferralForm.vue'
 import AddPaymentForm from './AddPaymentForm.vue'
@@ -125,6 +146,7 @@ import { useAuth } from '@/composables/useAuth'
 const { currentUser } = useAuth()
 
 // Application state
+const activeView = ref('overview')
 const referrals = ref([])
 const payments = ref({})
 const showAddForm = ref(false)
