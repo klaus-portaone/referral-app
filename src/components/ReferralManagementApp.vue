@@ -427,7 +427,7 @@ const isPaymentValidForMonth = (referral, monthKey) => {
 const generateMonthsArray = () => {
   const months = []
   const currentDate = new Date()
-  for (let i = 5; i >= 0; i--) {
+  for (let i = 11; i >= 0; i--) {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1)
     const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
     const monthName = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
