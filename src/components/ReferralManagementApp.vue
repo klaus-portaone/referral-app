@@ -59,6 +59,14 @@
         :loading="loading"
       />
 
+      <!-- Uninvoiced Payments Report -->
+      <UninvoicedPaymentsReport
+        :referrals="referrals"
+        :payments="payments"
+        @updateInvoiceStatus="handleUpdateInvoiceStatus"
+        :loading="loading"
+      />
+
       <!-- Main Content - Referrals List -->
       <ReferralsList
         :referrals="referrals"
@@ -111,6 +119,7 @@ import ReferralsList from './ReferralsList.vue'
 import PaymentTracking from './PaymentTracking.vue'
 import MessageBanner from './MessageBanner.vue'
 import TeamManagement from './TeamManagement.vue'
+import UninvoicedPaymentsReport from './UninvoicedPaymentsReport.vue'
 import { useAuth } from '@/composables/useAuth'
 
 const { currentUser } = useAuth()
