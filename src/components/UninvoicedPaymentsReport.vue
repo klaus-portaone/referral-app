@@ -10,6 +10,14 @@
           <span class="text-sm font-medium text-gray-600">Total Uninvoiced:</span>
           <span class="ml-2 text-xl font-bold text-orange-600">${{ totalUninvoiced.toFixed(2) }}</span>
         </div>
+        <button
+          v-if="uninvoicedPayments.length > 0"
+          @click="markAllAsInvoiced"
+          class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 hover:from-blue-600 hover:to-indigo-700 transition-all duration-300"
+        >
+          <CheckCircle :size="18" />
+          Mark All as Invoiced
+        </button>
       </div>
     </div>
 
@@ -86,7 +94,7 @@ const props = defineProps({
   loading: Boolean
 })
 
-const emit = defineEmits(['updateInvoiceStatus'])
+const emit = defineEmits(['updateInvoiceStatus', 'markAllAsInvoiced'])
 
 const uninvoicedPayments = computed(() => {
   const payments = []
@@ -125,5 +133,11 @@ const formatMonth = (monthKey) => {
 
 const markAsInvoiced = (customerId, month) => {
   emit('updateInvoiceStatus', customerId, month, true)
+}
+
+const markAllAsInvoiced = () => {
+  if (confirm(`Are you sure you want to mark all ${uninvoicedPayments.value.length} payments as invoiced?`)) {
+    emit('markAllAsInvoiced', uninvoicedPayments.value)
+  }
 }
 </script>

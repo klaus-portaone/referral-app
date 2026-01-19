@@ -99,6 +99,7 @@
             :referrals="referrals"
             :payments="payments"
             @updateInvoiceStatus="handleUpdateInvoiceStatus"
+            @markAllAsInvoiced="handleMarkAllAsInvoiced"
             :loading="loading"
           />
         </div>
@@ -401,6 +402,26 @@ const handleUpdateInvoiceStatus = async (customerId, month, isInvoiced) => {
   } catch (error) {
     console.error('Error updating invoice status:', error)
     showErrorMessage.value = 'Failed to update invoice status'
+  }
+}
+
+const handleMarkAllAsInvoiced = async (payments) => {
+  try {
+    loading.value = true
+
+    // Update all payments in parallel
+    await Promise.all(
+      payments.map(payment =>
+        updateInvoiceStatus(payment.customerId, payment.month, true)
+      )
+    )
+
+    showSuccessMessage.value = `Successfully marked ${payments.length} payment(s) as invoiced!`
+  } catch (error) {
+    console.error('Error marking all as invoiced:', error)
+    showErrorMessage.value = 'Failed to mark all payments as invoiced'
+  } finally {
+    loading.value = false
   }
 }
 
