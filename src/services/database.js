@@ -228,18 +228,28 @@ export const updatePaymentStatus = async (referralId, month, status) => {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('User not authenticated');
-    
+
+    // Get user's teams to include team members' payments
+    const teams = await getUserTeams();
+    const teamMemberIds = new Set([user.uid]); // Include current user
+
+    teams.forEach(team => {
+      team.members.forEach(memberId => teamMemberIds.add(memberId));
+    });
+
+    const memberIds = Array.from(teamMemberIds);
+
     const paymentsQuery = query(
       collection(db, 'payments'),
       where('referralId', '==', referralId),
       where('month', '==', month),
-      where('userId', '==', user.uid)
+      where('userId', 'in', memberIds)
     );
     const paymentsSnapshot = await getDocs(paymentsQuery);
-    
+
     if (!paymentsSnapshot.empty) {
       const paymentDoc = paymentsSnapshot.docs[0];
-      await updateDoc(paymentDoc.ref, { 
+      await updateDoc(paymentDoc.ref, {
         status: status,
         updatedAt: new Date()
       });
@@ -271,18 +281,28 @@ export const updateInvoiceStatus = async (referralId, month, isInvoiced) => {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('User not authenticated');
-    
+
+    // Get user's teams to include team members' payments
+    const teams = await getUserTeams();
+    const teamMemberIds = new Set([user.uid]); // Include current user
+
+    teams.forEach(team => {
+      team.members.forEach(memberId => teamMemberIds.add(memberId));
+    });
+
+    const memberIds = Array.from(teamMemberIds);
+
     const paymentsQuery = query(
       collection(db, 'payments'),
       where('referralId', '==', referralId),
       where('month', '==', month),
-      where('userId', '==', user.uid)
+      where('userId', 'in', memberIds)
     );
     const paymentsSnapshot = await getDocs(paymentsQuery);
-    
+
     if (!paymentsSnapshot.empty) {
       const paymentDoc = paymentsSnapshot.docs[0];
-      await updateDoc(paymentDoc.ref, { 
+      await updateDoc(paymentDoc.ref, {
         isInvoiced: isInvoiced,
         invoicedAt: isInvoiced ? new Date() : null,
         updatedAt: new Date()
@@ -304,18 +324,28 @@ export const deletePayment = async (referralId, month) => {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('User not authenticated');
-    
+
+    // Get user's teams to include team members' payments
+    const teams = await getUserTeams();
+    const teamMemberIds = new Set([user.uid]); // Include current user
+
+    teams.forEach(team => {
+      team.members.forEach(memberId => teamMemberIds.add(memberId));
+    });
+
+    const memberIds = Array.from(teamMemberIds);
+
     const paymentsQuery = query(
       collection(db, 'payments'),
       where('referralId', '==', referralId),
       where('month', '==', month),
-      where('userId', '==', user.uid)
+      where('userId', 'in', memberIds)
     );
     const paymentsSnapshot = await getDocs(paymentsQuery);
-    
+
     const deletePromises = paymentsSnapshot.docs.map(doc => deleteDoc(doc.ref));
     await Promise.all(deletePromises);
-    
+
     console.log('Payment(s) deleted:', referralId, month);
   } catch (error) {
     console.error('Error deleting payment:', error);
