@@ -389,7 +389,9 @@ const handleDeletePayment = async (customerId, month) => {
 
 const handleUpdatePaymentStatus = async (customerId, month, status) => {
   try {
-    await updatePaymentStatus(customerId, month, status)
+    const referral = referrals.value.find(r => r.id === customerId)
+    const expectedAmount = referral?.monthlyValue || 0
+    await updatePaymentStatus(customerId, month, status, expectedAmount)
   } catch (error) {
     console.error('Error updating payment status:', error)
     showErrorMessage.value = 'Failed to update payment status'

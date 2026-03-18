@@ -224,7 +224,7 @@ export const addPayment = async (paymentData) => {
 /**
  * Update payment status (paid, pending, overdue)
  */
-export const updatePaymentStatus = async (referralId, month, status) => {
+export const updatePaymentStatus = async (referralId, month, status, expectedAmount = 0) => {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('User not authenticated');
@@ -249,10 +249,16 @@ export const updatePaymentStatus = async (referralId, month, status) => {
 
     if (!paymentsSnapshot.empty) {
       const paymentDoc = paymentsSnapshot.docs[0];
-      await updateDoc(paymentDoc.ref, {
+      const updateData = {
         status: status,
         updatedAt: new Date()
-      });
+      };
+      // If marking as paid and no amount recorded yet, use the expected amount
+      const existingAmount = paymentDoc.data().amount || 0;
+      if (status === 'paid' && existingAmount === 0 && expectedAmount > 0) {
+        updateData.amount = expectedAmount;
+      }
+      await updateDoc(paymentDoc.ref, updateData);
       console.log('Payment status updated:', referralId, month, status);
     } else {
       // If no payment exists, create one
@@ -260,7 +266,7 @@ export const updatePaymentStatus = async (referralId, month, status) => {
         referralId: referralId,
         month: month,
         status: status,
-        amount: 0, // Default amount, should be updated later
+        amount: status === 'paid' ? expectedAmount : 0,
         isInvoiced: false,
         userId: user.uid,
         createdAt: new Date(),
