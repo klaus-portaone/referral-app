@@ -12,6 +12,14 @@
         </div>
         <button
           v-if="uninvoicedPayments.length > 0"
+          @click="exportToCSV"
+          class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg font-semibold flex items-center gap-2 hover:bg-gray-50 transition-all duration-300"
+        >
+          <Download :size="18" />
+          Export to CSV
+        </button>
+        <button
+          v-if="uninvoicedPayments.length > 0"
           @click="markAllAsInvoiced"
           class="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 hover:from-blue-600 hover:to-indigo-700 transition-all duration-300"
         >
@@ -80,7 +88,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { FileCheck, CheckCircle } from 'lucide-vue-next'
+import { FileCheck, CheckCircle, Download } from 'lucide-vue-next'
 
 const props = defineProps({
   referrals: {
@@ -139,5 +147,24 @@ const markAllAsInvoiced = () => {
   if (confirm(`Are you sure you want to mark all ${uninvoicedPayments.value.length} payments as invoiced?`)) {
     emit('markAllAsInvoiced', uninvoicedPayments.value)
   }
+}
+
+const exportToCSV = () => {
+  const headers = ['Customer', 'Month', 'Amount', 'Payment Status']
+  const rows = uninvoicedPayments.value.map(p => [
+    `"${p.customerName.replace(/"/g, '""')}"`,
+    formatMonth(p.month),
+    p.amount.toFixed(2),
+    'Paid'
+  ])
+
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `uninvoiced-payments-${new Date().toISOString().slice(0, 10)}.csv`
+  link.click()
+  URL.revokeObjectURL(url)
 }
 </script>
