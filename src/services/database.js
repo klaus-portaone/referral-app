@@ -283,39 +283,42 @@ export const updatePaymentStatus = async (referralId, month, status, expectedAmo
 /**
  * Update invoice status (invoiced or not invoiced)
  */
-export const updateInvoiceStatus = async (referralId, month, isInvoiced) => {
+export const updateInvoiceStatus = async (referralId, month, isInvoiced, paymentId = null) => {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('User not authenticated');
 
-    // Get user's teams to include team members' payments
-    const teams = await getUserTeams();
-    const teamMemberIds = new Set([user.uid]); // Include current user
+    const updateData = {
+      isInvoiced: isInvoiced,
+      invoicedAt: isInvoiced ? new Date() : null,
+      updatedAt: new Date()
+    };
 
-    teams.forEach(team => {
-      team.members.forEach(memberId => teamMemberIds.add(memberId));
-    });
-
-    const memberIds = Array.from(teamMemberIds);
-
-    const paymentsQuery = query(
-      collection(db, 'payments'),
-      where('referralId', '==', referralId),
-      where('month', '==', month),
-      where('userId', 'in', memberIds)
-    );
-    const paymentsSnapshot = await getDocs(paymentsQuery);
-
-    if (!paymentsSnapshot.empty) {
-      const paymentDoc = paymentsSnapshot.docs[0];
-      await updateDoc(paymentDoc.ref, {
-        isInvoiced: isInvoiced,
-        invoicedAt: isInvoiced ? new Date() : null,
-        updatedAt: new Date()
-      });
+    if (paymentId) {
+      await updateDoc(doc(db, 'payments', paymentId), updateData);
       console.log('Invoice status updated:', referralId, month, isInvoiced);
     } else {
-      console.warn('No payment found to update invoice status:', referralId, month);
+      // Fallback: query by referralId + month + userId
+      const teams = await getUserTeams();
+      const teamMemberIds = new Set([user.uid]);
+      teams.forEach(team => {
+        team.members.forEach(memberId => teamMemberIds.add(memberId));
+      });
+
+      const paymentsQuery = query(
+        collection(db, 'payments'),
+        where('referralId', '==', referralId),
+        where('month', '==', month),
+        where('userId', 'in', Array.from(teamMemberIds))
+      );
+      const paymentsSnapshot = await getDocs(paymentsQuery);
+
+      if (!paymentsSnapshot.empty) {
+        await updateDoc(paymentsSnapshot.docs[0].ref, updateData);
+        console.log('Invoice status updated:', referralId, month, isInvoiced);
+      } else {
+        throw new Error(`No payment found for referral ${referralId}, month ${month}`);
+      }
     }
   } catch (error) {
     console.error('Error updating invoice status:', error);

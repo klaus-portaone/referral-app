@@ -398,9 +398,9 @@ const handleUpdatePaymentStatus = async (customerId, month, status) => {
   }
 }
 
-const handleUpdateInvoiceStatus = async (customerId, month, isInvoiced) => {
+const handleUpdateInvoiceStatus = async (customerId, month, isInvoiced, paymentId) => {
   try {
-    await updateInvoiceStatus(customerId, month, isInvoiced)
+    await updateInvoiceStatus(customerId, month, isInvoiced, paymentId)
   } catch (error) {
     console.error('Error updating invoice status:', error)
     showErrorMessage.value = 'Failed to update invoice status'
@@ -414,7 +414,7 @@ const handleMarkAllAsInvoiced = async (payments) => {
     // Update all payments in parallel
     await Promise.all(
       payments.map(payment =>
-        updateInvoiceStatus(payment.customerId, payment.month, true)
+        updateInvoiceStatus(payment.customerId, payment.month, true, payment.paymentId)
       )
     )
 
