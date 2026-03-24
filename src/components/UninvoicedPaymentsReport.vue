@@ -72,7 +72,7 @@
             </td>
             <td class="py-4 px-4">
               <button
-                @click="markAsInvoiced(payment.customerId, payment.month, payment.paymentId)"
+                @click="markAsInvoiced(payment.customerId, payment.month)"
                 class="px-3 py-1 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors flex items-center gap-2"
               >
                 <CheckCircle :size="16" />
@@ -115,7 +115,6 @@ const uninvoicedPayments = computed(() => {
       // Only include paid payments that haven't been invoiced and have a non-zero amount
       if (payment.status === 'paid' && !payment.isInvoiced && payment.amount > 0) {
         payments.push({
-          paymentId: payment.id,
           customerId: referral.id,
           customerName: referral.customerName,
           month: payment.month,
@@ -140,8 +139,8 @@ const formatMonth = (monthKey) => {
   return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 }
 
-const markAsInvoiced = (customerId, month, paymentId) => {
-  emit('updateInvoiceStatus', customerId, month, true, paymentId)
+const markAsInvoiced = (customerId, month) => {
+  emit('updateInvoiceStatus', customerId, month, true)
 }
 
 const markAllAsInvoiced = () => {

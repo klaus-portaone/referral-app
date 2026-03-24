@@ -261,18 +261,36 @@ export const updatePaymentStatus = async (referralId, month, status, expectedAmo
       await updateDoc(paymentDoc.ref, updateData);
       console.log('Payment status updated:', referralId, month, status);
     } else {
-      // If no payment exists, create one
-      await addDoc(collection(db, 'payments'), {
-        referralId: referralId,
-        month: month,
-        status: status,
-        amount: status === 'paid' ? expectedAmount : 0,
-        isInvoiced: false,
-        userId: user.uid,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-      console.log('New payment record created:', referralId, month, status);
+      // Broader search (no userId filter) to avoid creating duplicate docs
+      const broadQuery = query(
+        collection(db, 'payments'),
+        where('referralId', '==', referralId),
+        where('month', '==', month)
+      );
+      const broadSnapshot = await getDocs(broadQuery);
+
+      if (!broadSnapshot.empty) {
+        const paymentDoc = broadSnapshot.docs[0];
+        const updateData = { status: status, updatedAt: new Date() };
+        const existingAmount = paymentDoc.data().amount || 0;
+        if (status === 'paid' && existingAmount === 0 && expectedAmount > 0) {
+          updateData.amount = expectedAmount;
+        }
+        await updateDoc(paymentDoc.ref, updateData);
+        console.log('Payment status updated (cross-scope):', referralId, month, status);
+      } else {
+        await addDoc(collection(db, 'payments'), {
+          referralId: referralId,
+          month: month,
+          status: status,
+          amount: status === 'paid' ? expectedAmount : 0,
+          isInvoiced: false,
+          userId: user.uid,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        console.log('New payment record created:', referralId, month, status);
+      }
     }
   } catch (error) {
     console.error('Error updating payment status:', error);
@@ -283,7 +301,7 @@ export const updatePaymentStatus = async (referralId, month, status, expectedAmo
 /**
  * Update invoice status (invoiced or not invoiced)
  */
-export const updateInvoiceStatus = async (referralId, month, isInvoiced, paymentId = null) => {
+export const updateInvoiceStatus = async (referralId, month, isInvoiced) => {
   try {
     const user = auth.currentUser;
     if (!user) throw new Error('User not authenticated');
@@ -294,32 +312,20 @@ export const updateInvoiceStatus = async (referralId, month, isInvoiced, payment
       updatedAt: new Date()
     };
 
-    if (paymentId) {
-      await updateDoc(doc(db, 'payments', paymentId), updateData);
-      console.log('Invoice status updated:', referralId, month, isInvoiced);
-    } else {
-      // Fallback: query by referralId + month + userId
-      const teams = await getUserTeams();
-      const teamMemberIds = new Set([user.uid]);
-      teams.forEach(team => {
-        team.members.forEach(memberId => teamMemberIds.add(memberId));
-      });
+    // Always query all docs for this referral+month to handle duplicates
+    const allDocsQuery = query(
+      collection(db, 'payments'),
+      where('referralId', '==', referralId),
+      where('month', '==', month)
+    );
+    const allDocsSnapshot = await getDocs(allDocsQuery);
 
-      const paymentsQuery = query(
-        collection(db, 'payments'),
-        where('referralId', '==', referralId),
-        where('month', '==', month),
-        where('userId', 'in', Array.from(teamMemberIds))
-      );
-      const paymentsSnapshot = await getDocs(paymentsQuery);
-
-      if (!paymentsSnapshot.empty) {
-        await updateDoc(paymentsSnapshot.docs[0].ref, updateData);
-        console.log('Invoice status updated:', referralId, month, isInvoiced);
-      } else {
-        throw new Error(`No payment found for referral ${referralId}, month ${month}`);
-      }
+    if (allDocsSnapshot.empty) {
+      throw new Error(`No payment found for referral ${referralId}, month ${month}`);
     }
+
+    await Promise.all(allDocsSnapshot.docs.map(d => updateDoc(d.ref, updateData)));
+    console.log('Invoice status updated:', referralId, month, isInvoiced, `(${allDocsSnapshot.docs.length} doc(s))`);
   } catch (error) {
     console.error('Error updating invoice status:', error);
     throw new Error('Failed to update invoice status: ' + error.message);
